@@ -1,0 +1,68 @@
+SIP2 PHP Client Class
+
+Public Variables:
+
+fieldTerm:
+    Default: |
+    Field terminator for variable length messages
+
+termPass:
+    Default: blank
+    Terminal Password
+
+doSequence:
+    Default: true
+    Append Sequence IDs to messages
+
+doChecksum:
+    Default: true
+    Append Checksums to messages
+
+language:
+    Default: 000
+    SIP language code
+
+recvTimeO:
+    Default: 3
+    Number of seconds to wait on receive statements before timing out
+
+sendTimeO:
+    default: 6
+    Number of seconds to wait on send statements before timing out
+
+acsStatus:
+    Default: empty array
+    Updated whenever an ACS status message is received.
+    These messages can be sent in response to any outgoing message.
+    Unless explicitly asked for they are silently parsed when received.
+
+Public Functions:
+
+connect(hostname, port, username, password):
+    Connect to a given host/port. Returns true on success.
+    Username/password are optional. If either is null no login message is sent.
+    Returns false on any failure.
+
+disconnect()
+    Closes the open socket, if any.
+
+sendStatus()
+    Automatically sent during connect. Sends a SC status message and returns the ACS status message.
+
+patronStatus(barcode, pin)
+    Returns the patron status for a given patron. SIP2 docs recommend against using it.
+    Pin is optional.
+
+patronInformation(barcode, pin, summaryType, startItem, endItem)
+    Returns the patron information response for the given patron.
+    Everything other than barcode is optional.
+    summaryType can be one of:
+        Hold, Overdue, Charged, Fine, Recall, UnavailableHolds, Fee
+
+patronInformationIfValid(barcode, pin, summaryType, startItem, endItem)
+    Same as patronInformation, but returns boolean false when patron is not valid
+    If pin is provided, also returns false when pin is incorrect.
+
+patronValid(barcode, pin)
+    Returns true if patron is valid, false otherwise.
+    If optional pin is provided it must also match to get a true result.
