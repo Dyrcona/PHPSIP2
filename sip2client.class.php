@@ -188,6 +188,17 @@ class SIP2Client
         return $this->patronInformationIfValid($barcode, $pin) !== false;
     }
 
+    function payFee($feeType, $paymentType, $currencyType, $feeAmount, $barcode, $pin = null, $feeID = null, $tranactionID = null) {
+        $this->varFields['AA'] = $barcode;
+        $this->varFields['AD'] = $pin;
+        $this->varFields['AC'] = $this->termPass;
+        $this->varFields['BV'] = sprintf("%.2f", $feeAmount);
+        $this->varFields['CG'] = $feeID;
+        $this->varFields['BK'] = $transactionID;
+        $message = $this->_construct37($feeType, $paymentType, $currencyType);
+        return $this->_sendMessage($message);
+    }
+
     function _login() {
         $this->varFields['CN'] = $this->username;
         $this->varFields['CO'] = $this->password;
@@ -267,6 +278,50 @@ class SIP2Client
             'TransactionDate' => $matches[3]
         );
         return $result + $this->_parseVariable($matches[4]);
+    }
+
+    /*  Fee Paid
+        Message ID 37
+
+        Fixed Fields:
+            Transaction Date - 18 char
+            Fee Type - 2 char (01 - 99)
+            Payment Type - 2 char (00 - 99)
+            Currency - 3 char
+    */
+    function _construct37($feeType, $paymentType, $currencyType) {
+        $message = sprintf('37%18s%2s%2s%3s',
+                 $this->_sipDate(),
+                 $feeType,
+                 $paymentType,
+                 $currencyType);
+        $message .= $this->_addVarField('BV',true);
+        $message .= $this->_addVarField('AO',true);
+        $message .= $this->_addVarField('AA',true);
+        $message .= $this->_addVarField('AC',false);
+        $message .= $this->_addVarField('AD',false);
+        $message .= $this->_addVarField('CG',false);
+        $message .= $this->_addVarField('BK',false);
+        $message .= $this->_seq();
+        return $message;
+    }
+
+    /*  Fee Paid Response
+        Message ID 38
+
+        Fixed Fields:
+            Payment Accepted - 1 char (Y or N)
+            Transaction Date - 18 char
+    */
+    function _parse38($message) {
+        $matches = array();
+        if(!preg_match("/^38([YN])(.{18})(.*)$/",$message,$matches))
+            throw new Exception('_parse38 failed to parse message');
+        $result = array(
+             'PaymentAccepted' => $matches[1],
+             'TransactionDate' => $matches[2]
+        );
+        return $result + $this->_parseVariable($matches[3]);
     }
 
     /*  Patron Information
