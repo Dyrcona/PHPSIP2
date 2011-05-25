@@ -155,6 +155,13 @@ class SIP2Client
         return $result;
     }
 
+    function itemInformation($barcode) {
+        $this->varFields['AB'] = $barcode;
+        $this->varFields['AC'] = $this->termPass;
+        $message = $this->_construct17();
+        return $this->_sendMessage($message);
+    }
+
     function patronStatus($barcode, $pin = null) {
         $this->varFields['AA'] = $barcode;
         $this->varFields['AD'] = $pin;
@@ -232,6 +239,50 @@ class SIP2Client
             // True is "unexpected ACS status message or resend request"
         } while($result === true || ($result === false && $retries != 0));
         return $result;
+    }
+
+    /*  Item Information Request
+        Message ID 17
+
+        Fixed Fields:
+            Transaction Date - 18 char
+        Variable Fields:
+            Institution ID - AO - Required
+            Item Identifier - AB - Required
+            Terminal Password - AC - Optional
+    */
+    function _construct17() {
+        $message = sprintf('17%18s',
+                $this->_sipDate());
+
+        $message .= $this->_addVarField('AO',true);
+        $message .= $this->_addVarField('AB',true);
+        $message .= $this->_addVarField('AC',false);
+        $message .= $this->_seq();
+
+        return $message;
+    }
+
+    /*  Item Information Response
+        Message ID 18
+
+        Fixed Fields:
+            Circulation Status - 2 char
+            Security Marker - 2 char
+            Fee Type - 2 char
+            Transaction Date - 18 char
+    */
+    function _parse18($message) {
+        $matches = array();
+        if(!preg_match("/^18(.{2})(.{2})(.{2})(.{18})(.*)$/",$message, $matches))
+            throw new Exception('_parse24 failed to parse message');
+        $result = array(
+            'CirculationStatus' => $matches[1],
+            'SecurityMarker' => $matches[2],
+            'FeeType' => $matches[3],
+            'TransactionDate' => $matches[4]
+        );
+        return $result + $this->_parseVariable($matches[5]);
     }
 
     /*  Patron Status Request
