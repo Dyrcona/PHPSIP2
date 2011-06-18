@@ -206,6 +206,19 @@ class SIP2Client
         return $this->_sendMessage($message);
     }
 
+    function checkout($renewal, $noblock, $itemBarcode, $patronBarcode, $itemProperties = null, $pin = null, $feeAcknowledged = null, $cancel = null,
+                      $transDate = null, $nbDueDate = null) {
+        $this->varFields['AA'] = $patronBarcode;
+        $this->varFields['AB'] = $itemBarcode;
+        $this->varFields['AC'] = $this->termPass();
+	$this->varFields['CH'] = $itemProperties;
+	$this->varFields['AD'] = $pin;
+	$this->varFields['BO'] = $feeAcknowledged;
+	$this->varFields['BI'] = $cancel;
+	$message = $this->_construct11($renewal, $noblock, ($transDate) ? $transDate : $this->_sipDate(), ($nbDueDate) ? $nbDueDate : $this->_sipDate());
+	return $this->_sendMessage($message);
+    }
+
     function _login() {
         $this->varFields['CN'] = $this->username;
         $this->varFields['CO'] = $this->password;
@@ -239,6 +252,68 @@ class SIP2Client
             // True is "unexpected ACS status message or resend request"
         } while($result === true || ($result === false && $retries != 0));
         return $result;
+    }
+
+    /* Checkout
+       Message ID 11
+
+       Fixed Fields:
+           Renewal Policy - 1 char (Y or N)
+           No Block (offline transaction) - 1 char (Y or N)
+           Transaction Date - 18 char
+           No Block Due Date - 18 char
+        Variable Fields:
+           Institution ID - AO - Required
+           Patron Identifier - AA - Required
+           Item Identifier - AB - Required
+           Terminal Password - AC - Required
+           Item Properties - CH - Optional
+           Patron Password - AD - Optional
+           Fee Acknowledged - BO - Optional - 1 char (Y or N)
+           Cancel - BI - Optional - 1 char (Y or N)
+    */
+    function _construct11($renewal, $noblock, $transDate, $nbDueDate) {
+        $message = sprintf('11%1s%1s%18s%18s',
+	                   $renewal,
+			   $noblock,
+			   $transDate,
+			   $nbDueDate);
+
+        $message .= $this->_addVarField('AO',true);
+	$message .= $this->_addVarField('AA',true);
+	$message .= $this->_addVarField('AB',true);
+	$message .= $this->_addVarField('AC',true);
+	$message .= $this->_addVarField('CH',false);
+	$message .= $this->_addVarField('AD',false);
+	$message .= $this->_addVarField('BO',false);
+	$message .= $this->_addVarField('BI',false);
+	$message .= $this->_seq();
+
+	return $message;
+    }
+
+    /* Checkout Response
+       Message ID 12
+
+       Fixed Fields:
+           OK - 1 char (0 or 1)
+           Renewal OK - 1 char (Y or N)
+           Magnetic Media - 1 char (Y or N or U)
+           Desensitize - 1 char (Y or N or U)
+           Transaction Date - 18-char
+    */
+    function _parse12($message) {
+        $matches = array();
+        if (!preg_match("/^12([01])([YN])([YNU])([YNU])(.{18})(.*)$/", $message, $matches))
+            throw new Exception('_parse12 failed to parse message');
+        $result = array(
+            'CheckoutOK' => $matches[1],
+            'RenewalOK' => $matches[2],
+            'MagneticMedia' => $matches[3],
+	    'Desensitize' => $matches[4],
+	    'TransacitonDate' => $matches[5]
+        );
+	return $result + $this->_parseVariable($matches[6]);
     }
 
     /*  Item Information Request
