@@ -210,7 +210,7 @@ class SIP2Client
                       $transDate = null, $nbDueDate = null) {
         $this->varFields['AA'] = $patronBarcode;
         $this->varFields['AB'] = $itemBarcode;
-        $this->varFields['AC'] = $this->termPass();
+        $this->varFields['AC'] = $this->termPass;
 	$this->varFields['CH'] = $itemProperties;
 	$this->varFields['AD'] = $pin;
 	$this->varFields['BO'] = $feeAcknowledged;
