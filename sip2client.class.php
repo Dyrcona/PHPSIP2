@@ -195,7 +195,7 @@ class SIP2Client
         return $this->patronInformationIfValid($barcode, $pin) !== false;
     }
 
-    function payFee($feeType, $paymentType, $currencyType, $feeAmount, $barcode, $pin = null, $feeID = null, $tranactionID = null) {
+    function payFee($feeType, $paymentType, $currencyType, $feeAmount, $barcode, $pin = null, $feeID = null, $transactionID = null) {
         $this->varFields['AA'] = $barcode;
         $this->varFields['AD'] = $pin;
         $this->varFields['AC'] = $this->termPass;
@@ -275,7 +275,7 @@ class SIP2Client
     function _parse18($message) {
         $matches = array();
         if(!preg_match("/^18(.{2})(.{2})(.{2})(.{18})(.*)$/",$message, $matches))
-            throw new Exception('_parse24 failed to parse message');
+            throw new Exception('_parse18 failed to parse message');
         $result = array(
             'CirculationStatus' => $matches[1],
             'SecurityMarker' => $matches[2],
