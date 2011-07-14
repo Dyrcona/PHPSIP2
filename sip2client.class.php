@@ -206,17 +206,26 @@ class SIP2Client
         return $this->_sendMessage($message);
     }
 
+    function checkin($noblock, $itemBarcode, $itemProperties = null, $cancel = null, $transDate = null, $returnDate = null) {
+        $this->varFields['AB'] = $itemBarcode;
+        $this->varFields['AC'] = $this->termPass;
+        $this->varFields['CH'] = $itemProperties;
+        $this->varFields['BI'] = $cancel;
+        $message = $this->_construct09($noblock, ($transDate) ? $transDate : $thid->_sipDate(), ($returnDate) ? $returnDate : $this->_sipDate());
+        return $this->_sendMessage($message);
+    }
+
     function checkout($renewal, $noblock, $itemBarcode, $patronBarcode, $itemProperties = null, $pin = null, $feeAcknowledged = null, $cancel = null,
                       $transDate = null, $nbDueDate = null) {
         $this->varFields['AA'] = $patronBarcode;
         $this->varFields['AB'] = $itemBarcode;
         $this->varFields['AC'] = $this->termPass;
-	$this->varFields['CH'] = $itemProperties;
-	$this->varFields['AD'] = $pin;
-	$this->varFields['BO'] = $feeAcknowledged;
-	$this->varFields['BI'] = $cancel;
-	$message = $this->_construct11($renewal, $noblock, ($transDate) ? $transDate : $this->_sipDate(), ($nbDueDate) ? $nbDueDate : $this->_sipDate());
-	return $this->_sendMessage($message);
+        $this->varFields['CH'] = $itemProperties;
+        $this->varFields['AD'] = $pin;
+        $this->varFields['BO'] = $feeAcknowledged;
+        $this->varFields['BI'] = $cancel;
+        $message = $this->_construct11($renewal, $noblock, ($transDate) ? $transDate : $this->_sipDate(), ($nbDueDate) ? $nbDueDate : $this->_sipDate());
+        return $this->_sendMessage($message);
     }
 
     function _login() {
@@ -254,6 +263,62 @@ class SIP2Client
         return $result;
     }
 
+    /* Checkin
+       Message ID 09
+
+       Fixed Fields:
+           No Block - 1 char (Y or N)
+           Transaction Date - 18 char
+           Return Date - 18 char
+       Variable Fields:
+           Current Location - AP - Required
+           Institution ID - AO - Required
+           Item Identifier - AB - Required
+           Terminal Password - AC - Required
+           Item Properties - CH - Optional
+           Cancel - BI - Optional - 1 char (Y or N)
+    */
+    function _construct09($noblock, $transDate, $returnDate) {
+        $message = sprintf('09%1s%18s%18s',
+                       $noblock,
+                       $transDate,
+                       $returnDate);
+
+        $message .= $this->_addVarField('AP',true);
+        $message .= $this->_addVarField('AO',true);
+        $message .= $this->_addVarField('AB',true);
+        $message .= $this->_addVarField('AC',true);
+        $message .= $this->_addVarField('CH',false);
+        $message .= $this->_addVarField('BI',false);
+        $message .= $this->_seq();
+
+        return $message;
+    }
+
+    /* Checkin Response
+       Message ID 10
+
+       Fixed Fields:
+           Ok - 1 char (0 or 1)
+           Resensitize - 1 char (Y or N)
+           Magnetic Media - 1 char (Y or N or U)
+           Alert - 1 char (Y or N)
+           Transaction Date - 18 char
+    */
+    function _parse10($message) {
+        $matches = array();
+        if (!preg_match("/^10([01])([YN])([YNU])([YN])(.{18})(.*)$/", $message, $matches))
+            throw new Exception('_parse12 failed to parse message');
+        $result = array(
+            'CheckinOK' => $matches[1],
+            'Resensitize' => $matches[2],
+            'MagneticMedia' => $matches[3],
+            'Alert' => $matches[4],
+            'TransacitonDate' => $matches[5]
+        );
+        return $result + $this->_parseVariable($matches[6]);
+    }
+
     /* Checkout
        Message ID 11
 
@@ -274,22 +339,22 @@ class SIP2Client
     */
     function _construct11($renewal, $noblock, $transDate, $nbDueDate) {
         $message = sprintf('11%1s%1s%18s%18s',
-	                   $renewal,
-			   $noblock,
-			   $transDate,
-			   $nbDueDate);
+                       $renewal,
+                       $noblock,
+                       $transDate,
+                       $nbDueDate);
 
         $message .= $this->_addVarField('AO',true);
-	$message .= $this->_addVarField('AA',true);
-	$message .= $this->_addVarField('AB',true);
-	$message .= $this->_addVarField('AC',true);
-	$message .= $this->_addVarField('CH',false);
-	$message .= $this->_addVarField('AD',false);
-	$message .= $this->_addVarField('BO',false);
-	$message .= $this->_addVarField('BI',false);
-	$message .= $this->_seq();
+        $message .= $this->_addVarField('AA',true);
+        $message .= $this->_addVarField('AB',true);
+        $message .= $this->_addVarField('AC',true);
+        $message .= $this->_addVarField('CH',false);
+        $message .= $this->_addVarField('AD',false);
+        $message .= $this->_addVarField('BO',false);
+        $message .= $this->_addVarField('BI',false);
+        $message .= $this->_seq();
 
-	return $message;
+        return $message;
     }
 
     /* Checkout Response
@@ -310,10 +375,10 @@ class SIP2Client
             'CheckoutOK' => $matches[1],
             'RenewalOK' => $matches[2],
             'MagneticMedia' => $matches[3],
-	    'Desensitize' => $matches[4],
-	    'TransacitonDate' => $matches[5]
+            'Desensitize' => $matches[4],
+            'TransacitonDate' => $matches[5]
         );
-	return $result + $this->_parseVariable($matches[6]);
+        return $result + $this->_parseVariable($matches[6]);
     }
 
     /*  Item Information Request
