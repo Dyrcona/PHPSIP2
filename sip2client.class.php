@@ -211,7 +211,7 @@ class SIP2Client
         $this->varFields['AC'] = $this->termPass;
         $this->varFields['CH'] = $itemProperties;
         $this->varFields['BI'] = $cancel;
-        $message = $this->_construct09($noblock, ($transDate) ? $transDate : $thid->_sipDate(), ($returnDate) ? $returnDate : $this->_sipDate());
+        $message = $this->_construct09($noblock, ($transDate) ? $transDate : $this->_sipDate(), ($returnDate) ? $returnDate : $this->_sipDate());
         return $this->_sendMessage($message);
     }
 
