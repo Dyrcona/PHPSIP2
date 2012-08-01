@@ -178,7 +178,7 @@ class SIP2Client
         $this->varFields['BQ'] = $endItem;
         $summary = '          ';
         $pos = array_search($summaryType, $this->summaryTypes);
-        if($pos !== false && $pos = (int)$pos && $pos >=0) $summary[$pos] = 'Y';
+        if($pos !== false && $pos == (int)$pos && $pos >=0) $summary[$pos] = 'Y';
         $message = $this->_construct63($summary);
         return $this->_sendMessage($message);
     }
