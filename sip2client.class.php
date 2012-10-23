@@ -737,7 +737,7 @@ class SIP2Client
             $checksum += ord($message[$i]);
         $checksum *= -1;
         $checksum &= 0xFFFF;
-        return 'AZ' . sprintf('%4X', $checksum);
+        return 'AZ' . sprintf('%04X', $checksum);
     }
 
     function _validateAndStripChecksumAndSequence($message) {
