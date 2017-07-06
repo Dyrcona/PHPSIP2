@@ -6,10 +6,6 @@ fieldTerm:
     Default: |
     Field terminator for variable length messages
 
-termPass:
-    Default: blank
-    Terminal Password
-
 doSequence:
     Default: true
     Append Sequence IDs to messages
@@ -45,6 +41,9 @@ connect(hostname, port, username, password):
 
 disconnect()
     Closes the open socket, if any.
+
+setTermPass(password)
+    Sets the Terminal Password for messages that use it.
 
 sendStatus()
     Automatically sent during connect. Sends a SC status message and returns the ACS status message.

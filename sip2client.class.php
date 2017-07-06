@@ -29,9 +29,6 @@ class SIP2Client
     // Public because it should be configurable according to docs
     public $fieldTerm = '|';
 
-    // Terminal Password
-    public $termPass = null;
-
     // Terminal Location
     public $location = '';
 
@@ -113,6 +110,10 @@ class SIP2Client
         return true;
     }
 
+    function setTermPass($newpass) {
+        $this->varFields['AC'] = $newpass;
+    }
+
     // In the event you want to inherit and change what kind of connection is opened, just override this.
     function _getSocket() {
         // Validate port is > 0
@@ -121,7 +122,7 @@ class SIP2Client
 
         // Convert hostname to IP, then validate IP is IP4
         $addr = gethostbyname($this->hostname);
-        if(!filter_var($addr, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4 | FILTER_FLAG_NO_RES_RANGE))
+        if(!filter_var($addr, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4))
             return false;
 
         // Open socket
@@ -157,7 +158,6 @@ class SIP2Client
 
     function itemInformation($barcode) {
         $this->varFields['AB'] = $barcode;
-        $this->varFields['AC'] = $this->termPass;
         $message = $this->_construct17();
         return $this->_sendMessage($message);
     }
@@ -165,7 +165,6 @@ class SIP2Client
     function patronStatus($barcode, $pin = null) {
         $this->varFields['AA'] = $barcode;
         $this->varFields['AD'] = $pin;
-        $this->varFields['AC'] = $this->termPass;
         $message = $this->_construct23();
         return $this->_sendMessage($message);
     }
@@ -173,7 +172,6 @@ class SIP2Client
     function patronInformation($barcode, $pin = null, $summaryType = 'none', $startItem = null, $endItem = null) {
         $this->varFields['AA'] = $barcode;
         $this->varFields['AD'] = $pin;
-        $this->varFields['AC'] = $this->termPass;
         $this->varFields['BP'] = $startItem;
         $this->varFields['BQ'] = $endItem;
         $summary = '          ';
@@ -198,7 +196,6 @@ class SIP2Client
     function payFee($feeType, $paymentType, $currencyType, $feeAmount, $barcode, $pin = null, $feeID = null, $transactionID = null) {
         $this->varFields['AA'] = $barcode;
         $this->varFields['AD'] = $pin;
-        $this->varFields['AC'] = $this->termPass;
         $this->varFields['BV'] = sprintf("%.2f", $feeAmount);
         $this->varFields['CG'] = $feeID;
         $this->varFields['BK'] = $transactionID;
@@ -208,7 +205,6 @@ class SIP2Client
 
     function checkin($noblock, $itemBarcode, $itemProperties = null, $cancel = null, $transDate = null, $returnDate = null) {
         $this->varFields['AB'] = $itemBarcode;
-        $this->varFields['AC'] = $this->termPass;
         $this->varFields['CH'] = $itemProperties;
         $this->varFields['BI'] = $cancel;
         $message = $this->_construct09($noblock, ($transDate) ? $transDate : $this->_sipDate(), ($returnDate) ? $returnDate : $this->_sipDate());
@@ -219,7 +215,6 @@ class SIP2Client
                       $transDate = null, $nbDueDate = null) {
         $this->varFields['AA'] = $patronBarcode;
         $this->varFields['AB'] = $itemBarcode;
-        $this->varFields['AC'] = $this->termPass;
         $this->varFields['CH'] = $itemProperties;
         $this->varFields['AD'] = $pin;
         $this->varFields['BO'] = $feeAcknowledged;
@@ -248,7 +243,7 @@ class SIP2Client
         do {
             $result = socket_write($this->socket, $message);
             if(!$result) {
-                $this->disconnect;
+                $this->disconnect();
                 return false;
             }
             do {
